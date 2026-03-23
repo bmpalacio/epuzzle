@@ -1,5 +1,5 @@
 /**
- * ePuzzel — client-side jigsaw (grid cut, optional snap + guides)
+ * ePuzzle — client-side jigsaw (grid cut, optional snap + guides)
  */
 
 const PIECE_COUNTS = [3, 5, 10, 15, 20, 50, 100, 150, 200];
