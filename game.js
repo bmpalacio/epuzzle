@@ -1,5 +1,5 @@
 /**
- * ePuzzle — client-side jigsaw (grid cut, optional snap + guides)
+ * ePuzzle — grid-cut puzzle (straight rectangles), placement modes
  */
 
 const PIECE_COUNTS = [3, 5, 10, 15, 20, 50, 100, 150, 200];
@@ -21,7 +21,8 @@ let grid = { rows: 1, cols: 1 };
 /** @type {HTMLImageElement | null} */
 let sourceFile = null;
 let pieceCountChoice = 10;
-let snapMode = true;
+/** @type {"guided" | "snap" | "free"} */
+let placementMode = "guided";
 let surfaceId = "table";
 let fullImageDataUrl = "";
 
@@ -105,8 +106,8 @@ function downscaleCanvas(source, w, h) {
   return { canvas: out, width: nw, height: nh };
 }
 
-function cutPieces(prepared, g) {
-  const { canvas, width, height } = prepared;
+/** Straight grid cuts (rectangular pieces). */
+function cutRectGrid(canvas, width, height, g) {
   const { rows, cols } = g;
   const pw = width / cols;
   const ph = height / rows;
@@ -129,12 +130,15 @@ function cutPieces(prepared, g) {
         slice.width,
         slice.height,
       );
+      const cw = slice.width;
+      const ch = slice.height;
       list.push({
         id: `${r}-${c}`,
         row: r,
         col: c,
-        width: slice.width,
-        height: slice.height,
+        coreW: cw,
+        coreH: ch,
+        pad: 0,
         src: slice.toDataURL("image/jpeg", 0.92),
         x: 0,
         y: 0,
@@ -146,8 +150,23 @@ function cutPieces(prepared, g) {
   return list;
 }
 
+function pieceMetrics(p, L) {
+  const s = Math.min(L.cellW / p.coreW, L.cellH / p.coreH);
+  return {
+    s,
+    dw: (p.coreW + 2 * p.pad) * s,
+    dh: (p.coreH + 2 * p.pad) * s,
+    offX: p.pad * s,
+    offY: p.pad * s,
+  };
+}
+
 function initSetupUI() {
   const pieceRow = $("pieceOptions");
+  if (!pieceRow) {
+    console.error("ePuzzle: #pieceOptions not found");
+    return;
+  }
   pieceRow.innerHTML = "";
   PIECE_COUNTS.forEach((n) => {
     const b = document.createElement("button");
@@ -170,6 +189,10 @@ function initSetupUI() {
   });
 
   const surfRow = $("surfaceOptions");
+  if (!surfRow) {
+    console.error("ePuzzle: #surfaceOptions not found");
+    return;
+  }
   surfRow.innerHTML = "";
   SURFACES.forEach((s) => {
     const b = document.createElement("button");
@@ -191,12 +214,15 @@ function initSetupUI() {
     surfRow.appendChild(b);
   });
 
-  document.querySelectorAll('.chip-row [data-mode]').forEach((btn) => {
+  document.querySelectorAll("#placementOptions [data-mode]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const mode = btn.dataset.mode;
-      snapMode = mode === "snap";
-      document.querySelectorAll('.chip-row [data-mode]').forEach((el) => {
+      if (mode === "guided" || mode === "snap" || mode === "free") {
+        placementMode = mode;
+      }
+      document.querySelectorAll("#placementOptions [data-mode]").forEach((el) => {
         el.setAttribute("aria-pressed", el === btn ? "true" : "false");
+        el.classList.toggle("active", el === btn);
       });
     });
   });
@@ -265,20 +291,24 @@ function measureLayout() {
 }
 
 function targetXY(p, L) {
+  const m = pieceMetrics(p, L);
   return {
-    x: L.boardX + p.col * L.cellW,
-    y: L.boardY + p.row * L.cellH,
+    x: L.boardX + p.col * L.cellW - m.offX,
+    y: L.boardY + p.row * L.cellH - m.offY,
   };
 }
 
 function scatter(L) {
-  pieces = pieces.map((p, i) => ({
-    ...p,
-    x: L.pile.left + Math.random() * Math.max(2, L.pile.width - L.cellW),
-    y: L.pile.top + Math.random() * Math.max(2, L.pile.height - L.cellH),
-    z: i + 1,
-    locked: false,
-  }));
+  pieces = pieces.map((p, i) => {
+    const m = pieceMetrics(p, L);
+    return {
+      ...p,
+      x: L.pile.left + Math.random() * Math.max(2, L.pile.width - m.dw),
+      y: L.pile.top + Math.random() * Math.max(2, L.pile.height - m.dh),
+      z: i + 1,
+      locked: false,
+    };
+  });
 }
 
 function applySurface() {
@@ -306,13 +336,14 @@ function renderPieces() {
   if (!layer || !L) return;
   layer.innerHTML = "";
   pieces.forEach((p) => {
+    const m = pieceMetrics(p, L);
     const el = document.createElement("div");
     el.className = `piece${p.locked ? " locked" : ""}`;
     el.dataset.id = p.id;
     el.style.left = `${p.x}px`;
     el.style.top = `${p.y}px`;
-    el.style.width = `${L.cellW}px`;
-    el.style.height = `${L.cellH}px`;
+    el.style.width = `${m.dw}px`;
+    el.style.height = `${m.dh}px`;
     el.style.zIndex = String(p.z);
     const img = document.createElement("img");
     img.src = p.src;
@@ -331,10 +362,11 @@ function syncPieceDOM() {
   pieces.forEach((p) => {
     const el = layer.querySelector(`[data-id="${p.id}"]`);
     if (!el) return;
+    const m = pieceMetrics(p, L);
     el.style.left = `${p.x}px`;
     el.style.top = `${p.y}px`;
-    el.style.width = `${L.cellW}px`;
-    el.style.height = `${L.cellH}px`;
+    el.style.width = `${m.dw}px`;
+    el.style.height = `${m.dh}px`;
     el.style.zIndex = String(p.z);
     el.classList.toggle("locked", p.locked);
   });
@@ -358,7 +390,7 @@ function onPointerDown(e) {
   pieces = pieces.map((x) => (x.id === id ? { ...x, z: nextZ } : x));
   drag = { id, ox, oy, pid: e.pointerId };
   syncPieceDOM();
-  $("ghostLayer").hidden = !snapMode;
+  $("ghostLayer").hidden = placementMode !== "guided";
   updateGhost();
 
   window.addEventListener("pointermove", onPointerMove, { passive: false });
@@ -373,10 +405,13 @@ function onPointerMove(e) {
   const layer = $("piecesLayer");
   if (!L || !layer) return;
   const lr = layer.getBoundingClientRect();
+  const piece = pieces.find((x) => x.id === drag.id);
+  if (!piece) return;
+  const m = pieceMetrics(piece, L);
   let nx = e.clientX - drag.ox - lr.left;
   let ny = e.clientY - drag.oy - lr.top;
-  nx = Math.max(0, Math.min(nx, L.layerW - L.cellW));
-  ny = Math.max(0, Math.min(ny, L.layerH - L.cellH));
+  nx = Math.max(0, Math.min(nx, L.layerW - m.dw));
+  ny = Math.max(0, Math.min(ny, L.layerH - m.dh));
   pieces = pieces.map((x) =>
     x.id === drag.id ? { ...x, x: nx, y: ny } : x,
   );
@@ -397,14 +432,15 @@ function onPointerUp(e) {
   if (!L) return;
   const p = pieces.find((x) => x.id === id);
   if (!p) return;
+  const m = pieceMetrics(p, L);
   const t = targetXY(p, L);
-  const cx = p.x + L.cellW / 2;
-  const cy = p.y + L.cellH / 2;
-  const tcx = t.x + L.cellW / 2;
-  const tcy = t.y + L.cellH / 2;
-  const dist = Math.hypot(cx - tcx, cy - tcy);
+  const cx = p.x + m.dw / 2;
+  const cy = p.y + m.dh / 2;
+  const cellCx = L.boardX + (p.col + 0.5) * L.cellW;
+  const cellCy = L.boardY + (p.row + 0.5) * L.cellH;
+  const dist = Math.hypot(cx - cellCx, cy - cellCy);
 
-  if (snapMode && dist < SNAP_DIST * 2.2) {
+  if (placementMode !== "free" && dist < SNAP_DIST * 2.2) {
     pieces = pieces.map((x) =>
       x.id === id ? { ...x, x: t.x, y: t.y, locked: true } : x,
     );
@@ -416,7 +452,7 @@ function onPointerUp(e) {
 }
 
 function updateGhost() {
-  if (!snapMode || !drag) return;
+  if (placementMode !== "guided" || !drag) return;
   const L = layoutRef;
   const gh = $("ghostLayer");
   if (!L || !gh) return;
@@ -471,10 +507,14 @@ function startTimer() {
 function startPuzzle() {
   if (!sourceFile) return;
   won = false;
+  let prepW = 0;
+  let prepH = 0;
   try {
     const prep = prepareImage(sourceFile);
+    prepW = prep.width;
+    prepH = prep.height;
     grid = closestGrid(pieceCountChoice, prep.width, prep.height);
-    pieces = cutPieces(prep, grid);
+    pieces = cutRectGrid(prep.canvas, prep.width, prep.height, grid);
     fullImageDataUrl = prep.canvas.toDataURL("image/jpeg", 0.9);
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Could not prepare image.";
@@ -488,11 +528,11 @@ function startPuzzle() {
   $("game").setAttribute("aria-hidden", "false");
 
   applySurface();
-  applyGridOverlay(snapMode);
+  applyGridOverlay(placementMode === "guided");
 
   const board = $("boardSurface");
-  const natW = pieces[0].width * grid.cols;
-  const natH = pieces[0].height * grid.rows;
+  const natW = prepW;
+  const natH = prepH;
   board.style.aspectRatio = `${natW} / ${natH}`;
   board.style.width = "100%";
   board.style.maxWidth = `min(96vw, calc((100dvh - 220px) * ${natW / natH}))`;
@@ -522,8 +562,15 @@ function startPuzzle() {
         const t = targetXY(p, layoutRef);
         return { ...p, x: t.x, y: t.y };
       }
-      const nx = Math.min(Math.max(0, p.x), layoutRef.layerW - layoutRef.cellW);
-      const ny = Math.min(Math.max(0, p.y), layoutRef.layerH - layoutRef.cellH);
+      const pm = pieceMetrics(p, layoutRef);
+      const nx = Math.min(
+        Math.max(0, p.x),
+        layoutRef.layerW - pm.dw,
+      );
+      const ny = Math.min(
+        Math.max(0, p.y),
+        layoutRef.layerH - pm.dh,
+      );
       return { ...p, x: nx, y: ny };
     });
     syncPieceDOM();

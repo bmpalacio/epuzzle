@@ -34,8 +34,20 @@ body {
   display: none !important;
 }
 
+/* Strong hide: beats .game { display: flex } / .modal { display: grid } when class order fights */
+#setup.hidden,
+#game.hidden,
+#refModal.hidden,
+#winModal.hidden {
+  display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
 /* ——— Setup ——— */
 .setup {
+  position: relative;
+  z-index: 5;
   max-width: 520px;
   margin: 0 auto;
   padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
@@ -310,6 +322,7 @@ body {
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
   border-radius: 2px;
   will-change: transform;
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .piece img {

@@ -1,6 +1,6 @@
 # ePuzzle
 
-Simple browser jigsaw: **upload an image**, pick **piece count**, choose **snap + dotted guides** or **free placement**, and a **surface** (wood table, wood floor, puzzle mat). Works on **mobile and desktop** — drag pieces from the **pile** to the **board**. Everything runs in the browser (no server upload).
+Simple browser puzzle: **upload an image**, pick **piece count**, choose **guide + snap** (kid-friendly grid + outline), **snap only**, or **fully free** placement, pick a **surface** (wood table, wood floor, puzzle mat). Pieces are a **straight grid** (rectangles). Works on **mobile and desktop** — drag from the **pile** to the **board**. Everything runs in the browser (no server upload).
 
 ## Piece counts
 

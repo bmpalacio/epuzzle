@@ -38,17 +38,21 @@
 
       <div class="panel">
         <h2>3. Placement</h2>
-        <div class="chip-row" role="group" aria-label="Placement mode">
-          <button type="button" class="chip" data-mode="snap" aria-pressed="true">
-            Snap + guides
+        <div id="placementOptions" class="chip-row" role="group" aria-label="Placement mode">
+          <button type="button" class="chip active" data-mode="guided" aria-pressed="true">
+            Guide + snap
+          </button>
+          <button type="button" class="chip" data-mode="snap" aria-pressed="false">
+            Snap only
           </button>
           <button type="button" class="chip" data-mode="free" aria-pressed="false">
-            Free placement
+            Free
           </button>
         </div>
         <p class="muted small">
-          <strong>Snap + guides:</strong> dotted outline for the active piece; snaps when close.<br />
-          <strong>Free:</strong> no grid; place anywhere (harder).
+          <strong>Guide + snap:</strong> dotted grid + outline while dragging; kid-friendly.<br />
+          <strong>Snap only:</strong> pieces snap when close — no grid or outline.<br />
+          <strong>Free:</strong> no snapping — hardest.
         </p>
       </div>
 
@@ -103,6 +107,6 @@
     </div>
   </div>
 
-  <script type="module" src="game.js"></script>
+  <script defer src="game.js"></script>
 </body>
 </html>
