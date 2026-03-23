@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#1a1510" />
+  <title>ePuzzel</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <section id="setup" class="setup" aria-label="Setup">
+      <header class="setup-header">
+        <h1>ePuzzel</h1>
+        <p class="lede">
+          Upload a photo, pick how many pieces and how they behave, then drag pieces from the
+          pile onto the surface.
+        </p>
+      </header>
+
+      <div class="panel">
+        <h2>1. Image</h2>
+        <label class="file-btn">
+          <input id="fileInput" type="file" accept="image/*" hidden />
+          Choose image
+        </label>
+        <p id="fileName" class="muted small"></p>
+        <p id="fileError" class="error small" role="alert" hidden></p>
+        <p class="legal small">
+          Use images you have rights to. Processing stays in your browser — nothing is uploaded to a server.
+        </p>
+      </div>
+
+      <div class="panel">
+        <h2>2. Pieces</h2>
+        <div class="chip-row" id="pieceOptions" role="group" aria-label="Piece count"></div>
+      </div>
+
+      <div class="panel">
+        <h2>3. Placement</h2>
+        <div class="chip-row" role="group" aria-label="Placement mode">
+          <button type="button" class="chip" data-mode="snap" aria-pressed="true">
+            Snap + guides
+          </button>
+          <button type="button" class="chip" data-mode="free" aria-pressed="false">
+            Free placement
+          </button>
+        </div>
+        <p class="muted small">
+          <strong>Snap + guides:</strong> dotted outline for the active piece; snaps when close.<br />
+          <strong>Free:</strong> no grid; place anywhere (harder).
+        </p>
+      </div>
+
+      <div class="panel">
+        <h2>4. Surface</h2>
+        <div class="chip-row" id="surfaceOptions" role="group" aria-label="Surface"></div>
+      </div>
+
+      <div class="panel actions">
+        <button type="button" id="startBtn" class="primary" disabled>Start puzzle</button>
+      </div>
+    </section>
+
+    <section id="game" class="game hidden" aria-hidden="true">
+      <header class="game-hud">
+        <button type="button" id="backBtn" class="ghost">← Menu</button>
+        <div class="hud-center">
+          <span id="gameTitle">ePuzzel</span>
+          <span id="timer" class="timer" aria-live="polite">0:00</span>
+        </div>
+        <button type="button" id="refBtn" class="ghost">Reference</button>
+      </header>
+
+      <div id="gameMain" class="game-main">
+        <div class="game-body">
+          <div class="board-wrap">
+            <div id="boardSurface" class="board-surface">
+              <div id="ghostLayer" class="ghost-layer" hidden></div>
+              <div id="gridLayer" class="grid-layer" hidden></div>
+            </div>
+          </div>
+
+          <div class="pile-wrap">
+            <span class="pile-label">Pile</span>
+            <div id="pileZone" class="pile-zone"></div>
+          </div>
+        </div>
+
+        <div id="piecesLayer" class="pieces-layer"></div>
+      </div>
+    </section>
+
+    <div id="refModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Reference image">
+      <button type="button" class="modal-close" id="refClose" aria-label="Close">×</button>
+      <img id="refImg" alt="Reference" />
+    </div>
+
+    <div id="winModal" class="modal win hidden" role="dialog" aria-modal="true">
+      <h2>Done!</h2>
+      <p id="winTime" class="muted"></p>
+      <button type="button" class="primary" id="winMenu">Back to menu</button>
+    </div>
+  </div>
+
+  <script type="module" src="game.js"></script>
+</body>
+</html>
